@@ -17,6 +17,10 @@ void setup() {
 }
 
 void loop() {
+//reset LEDs to off 
+  digitalWrite(BLUELED, LOW);
+  digitalWrite(REDLED, LOW);
+  
   rest = analogRead(ACCpin);
   ACC = analogRead(ACCpin);
   ACCDC = ACC - rest;
@@ -65,6 +69,10 @@ void loop() {
       digitalWrite(REDLED, LOW);
       digitalWrite(BLUELED, LOW);
     }
+
+    //maintain output for 5000 counts, don't immediately turn off
+    delay(5000);
+    
   }
   delay(10);
 }
