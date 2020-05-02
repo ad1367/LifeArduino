@@ -111,79 +111,81 @@ void loop() {
     p.y = map(p.y, TS_MINX, TS_MAXX, 0, tft.width());
     int y = tft.height() - p.x;
     int x = p.y;
-
-    rest = analogRead(ACCpin);
-    ACC = analogRead(ACCpin);
-    ACCDC = ACC - rest;
-    Serial.print("ACCDC: ");
-    Serial.println(ACCDC);
-
-    // if acceleration trips a maximum magnitude, start fall timer
-    if (abs(ACCDC) > MAX) {
-      digitalWrite(BLUELED, HIGH);
-      digitalWrite(REDLED, LOW);
-      /* for 10 seconds after a potential fall has been detected,
-             sense for stillness of movement that eliminates walking
-             as a potential cause of  acceleration */
-             
-      for (int i = 0; i <= 300; i++) {
-        // continue printing Acceleration
-        rest = analogRead(ACCpin);
-        ACC = analogRead(ACCpin);
-        ACCDC = ACC - rest;
-        Serial.print("ACCDC: ");
-        Serial.println(ACCDC);
-
-        //After a fall occurs, reset fall variables
-        if (i == 10) {
-          dACC = 0;
-          ACCMAX = 0;
-          ACCMIN = 0;
-        }
-
-        //Calculate maximum and minimum acceleration
-        if (ACCDC > ACCMAX) {
-          ACCMAX = ACCDC;
-        }
-        if (ACCDC < ACCMIN) {
-          ACCMIN = ACCDC;
-        }
-        dACC = ACCMAX - ACCMIN;
-        Serial.print("Diff ACC : ");
-        Serial.println(dACC);
-      }
-      /* if the person is at rest for 10 seconds after jolt,
-         second LED will turn on, signaling an alert */
-      if (dACC < 10) {
-        digitalWrite(REDLED, HIGH);
-        if (RecordOn)
-        {
-          if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W))) {
-            if ((y > REDBUTTON_Y) && (y <= (REDBUTTON_Y + REDBUTTON_H))) {
-              Serial.println("Red btn hit");
-              redBtn();
-            }
-          }
-        }
-        else //Record is off (RecordOn == false)
-        {
-          if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
-            if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
-              Serial.println("Green btn hit");
-              greenBtn();
-            }
-          }
-        }
-      }
-      
-      else {
-        digitalWrite(REDLED, LOW);
-        digitalWrite(BLUELED, LOW);
-      }
-
-      //maintain output for 5000 counts, don't immediately turn off
-      delay(5000);
-
-    }
-    delay(10);
   }
+  
+  //read and print acceleration data
+  rest = analogRead(ACCpin);
+  ACC = analogRead(ACCpin);
+  ACCDC = ACC - rest;
+  Serial.print("ACCDC: ");
+  Serial.println(ACCDC);
+
+  // if acceleration trips a maximum magnitude, start fall timer
+  if (abs(ACCDC) > MAX) {
+    digitalWrite(BLUELED, HIGH);
+    digitalWrite(REDLED, LOW);
+    /* for 10 seconds after a potential fall has been detected,
+           sense for stillness of movement that eliminates walking
+           as a potential cause of  acceleration */
+    for (int i = 0; i <= 300; i++) {
+      // continue printing Acceleration
+      rest = analogRead(ACCpin);
+      ACC = analogRead(ACCpin);
+      ACCDC = ACC - rest;
+      Serial.print("ACCDC: ");
+      Serial.println(ACCDC);
+
+      //After a fall occurs, reset fall variables
+      if (i == 10) {
+        dACC = 0;
+        ACCMAX = 0;
+        ACCMIN = 0;
+      }
+
+      //Calculate maximum and minimum acceleration
+      if (ACCDC > ACCMAX) {
+        ACCMAX = ACCDC;
+      }
+      if (ACCDC < ACCMIN) {
+        ACCMIN = ACCDC;
+      }
+      dACC = ACCMAX - ACCMIN;
+      Serial.print("Diff ACC : ");
+      Serial.println(dACC);
+    }
+    /*if the movement after the fall is too little and the touchscreen
+       is not touched, then enact the sound alert */
+    if ((dACC < 10) && (RecordOn == true)) {
+      digitalWrite(REDLED, HIGH);
+      if (RecordOn)  //the user has not yet responded on being ok
+      {
+        if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W)))
+        {
+          if ((y > REDBUTTON_Y) && (y <= (REDBUTTON_Y + REDBUTTON_H))) {
+            Serial.println("Red btn hit");
+            redBtn();
+          }
+        }
+      }
+    }
+
+/*if either movement has been detected or the screen has been 
+  touched, the code resets*/
+    else {
+      digitalWrite(REDLED, LOW);
+      digitalWrite(BLUELED, LOW);
+      if (RecordOn == false) //the user has responded they're ok
+      {
+        if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
+          if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
+            Serial.println("Green btn hit");
+            greenBtn();
+          }
+        }
+      }
+    }
+    //maintain output for 5000 counts, don't immediately turn off
+    delay(5000);
+  }
+  delay(10);
+}
