@@ -112,7 +112,7 @@ void loop() {
     int y = tft.height() - p.x;
     int x = p.y;
   }
-  
+
   //read and print acceleration data
   rest = analogRead(ACCpin);
   ACC = analogRead(ACCpin);
@@ -153,39 +153,37 @@ void loop() {
       Serial.print("Diff ACC : ");
       Serial.println(dACC);
     }
-    /*if the movement after the fall is too little and the touchscreen
-       is not touched, then enact the sound alert */
-    if ((dACC < 10) && (RecordOn == true)) {
-      digitalWrite(REDLED, HIGH);
-      if (RecordOn)  //the user has not yet responded on being ok
+  }
+  /*if the movement after the fall is too little and the touchscreen
+     is not touched, then enact the sound alert */
+  if ((dACC < 10) && (RecordOn == true)) {
+    digitalWrite(REDLED, HIGH);
+    if (RecordOn)  //the user has not yet responded on being ok
+    {
+      if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W)))
       {
-        if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W)))
-        {
-          if ((y > REDBUTTON_Y) && (y <= (REDBUTTON_Y + REDBUTTON_H))) {
-            Serial.println("Red btn hit");
-            redBtn();
-          }
+        if ((y > REDBUTTON_Y) && (y <= (REDBUTTON_Y + REDBUTTON_H))) {
+          Serial.println("Red btn hit");
+          redBtn();
         }
       }
     }
+  }
 
-/*if either movement has been detected or the screen has been 
-  touched, the code resets*/
-    else {
-      digitalWrite(REDLED, LOW);
-      digitalWrite(BLUELED, LOW);
-      if (RecordOn == false) //the user has responded they're ok
-      {
-        if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
-          if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
-            Serial.println("Green btn hit");
-            greenBtn();
-          }
+  /*if either movement has been detected or the screen has been
+    touched, the code resets*/
+  else {
+    digitalWrite(REDLED, LOW);
+    digitalWrite(BLUELED, LOW);
+    if (RecordOn == false) //the user has responded they're ok
+    {
+      if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
+        if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
+          Serial.println("Green btn hit");
+          greenBtn();
         }
       }
     }
-    //maintain output for 5000 counts, don't immediately turn off
-    delay(5000);
   }
   delay(10);
 }
