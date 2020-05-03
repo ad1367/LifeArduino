@@ -1,15 +1,30 @@
 const int ACCpin = A0;
 const int BLUELED = 2;
 const int REDLED = 4;
+const int PiezoPin = 7;
 float ACC;
 float ACCDC;
 int rest;
-int MAX = 6;
+int MAX = 6; //acceleration allowed before considering it a fall
 int ACCMAX = 0;
 int ACCMIN = 0;
 int dACC;
-
+int SoundAlert1;
+int SoundAlert2;
 boolean RecordOn = false;
+
+#define NOTE_C4  262
+#define NOTE_G3  196
+
+//define soundalert melody
+int melody[] = {
+  NOTE_C4, NOTE_G3, NOTE_C4, NOTE_G3, NOTE_C4, NOTE_G3, 0
+};
+
+// note durations: 4 = quarter note, 8 = eighth note, etc.:
+int noteDurations[] = {
+  4, 4, 4, 4, 4, 4, 4
+};
 
 //include Adafruit and touchscreen libraries
 #include <Adafruit_GFX.h>
@@ -96,9 +111,11 @@ void setup() {
 }
 
 void loop() {
-  //reset LEDs to off
+  //reset LEDs to off and variables to reset position
   digitalWrite(BLUELED, LOW);
   digitalWrite(REDLED, LOW);
+  SoundAlert1 = 0;
+  SoundAlert2 = 0;
 
   // See if there's any  touch data for us
   if (!ts.bufferEmpty())
@@ -113,6 +130,25 @@ void loop() {
     int x = p.y;
   }
 
+  if (RecordOn)  //what happens if the button is not pressed
+  {
+    if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W))) {
+      if ((y > REDBUTTON_Y) && (y <= (REDBUTTON_Y + REDBUTTON_H))) {
+        Serial.println("Red btn hit");
+        redBtn();
+      }
+    }
+  }
+  else //Screen goes green when button is pressed
+  {
+    if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
+      if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
+        Serial.println("Green btn hit");
+        greenBtn();
+      }
+    }
+  }
+
   //read and print acceleration data
   rest = analogRead(ACCpin);
   ACC = analogRead(ACCpin);
@@ -124,6 +160,7 @@ void loop() {
   if (abs(ACCDC) > MAX) {
     digitalWrite(BLUELED, HIGH);
     digitalWrite(REDLED, LOW);
+
     /* for 10 seconds after a potential fall has been detected,
            sense for stillness of movement that eliminates walking
            as a potential cause of  acceleration */
@@ -154,36 +191,38 @@ void loop() {
       Serial.println(dACC);
     }
   }
-  /*if the movement after the fall is too little and the touchscreen
-     is not touched, then enact the sound alert */
-  if ((dACC < 10) && (RecordOn == true)) {
-    digitalWrite(REDLED, HIGH);
-    if (RecordOn)  //the user has not yet responded on being ok
-    {
-      if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W)))
-      {
-        if ((y > REDBUTTON_Y) && (y <= (REDBUTTON_Y + REDBUTTON_H))) {
-          Serial.println("Red btn hit");
-          redBtn();
-        }
-      }
-    }
+  /*if the movement after fall is too little and touchscreen
+     is not touched, allow sound alert */
+  if (dACC < 10) {
+    SoundAlert1 = 1;
   }
 
-  /*if either movement has been detected or the screen has been
-    touched, the code resets*/
+  //if movement has been detected the code resets, sound disables
   else {
     digitalWrite(REDLED, LOW);
     digitalWrite(BLUELED, LOW);
-    if (RecordOn == false) //the user has responded they're ok
-    {
-      if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
-        if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
-          Serial.println("Green btn hit");
-          greenBtn();
-        }
-      }
-    }
+    SoundAlert1 = 0;
   }
+
+  //If the screen has been touched the code resets, sound disables
+  if (RecordOn == false) {
+    digitalWrite(REDLED, LOW);
+    digitalWrite(BLUELED, LOW);
+    SoundAlert1 = 0;
+  }
+  
+  // If the screen hasn't been touched, enable the sound alert
+  else {
+    SoundAlert2 = 1;
+  }
+  
+//if both no movement is detected and the screen isn't touched,
+  if (SoundAlert1 + SoundAlert2 == 2) {
+    //enact Piezo Sound Alert
+    tone(PiezoPin, melody[])
+  }
+  
+  //Turn off speaker before repeating
+  noTone(PiezoPin);
   delay(10);
 }
