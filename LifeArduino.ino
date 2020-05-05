@@ -1,6 +1,21 @@
+/*
+    Life Arduino
+
+    Detects a rapid movement and responds by initiating
+    a count, wherein if the user doesn't respond in time,
+    initiates a sound alert.
+
+    The circuit:
+     Arduino Uno wired to piezospeaker & accelerometer
+     2.8" TFT Touchscreen wired to Arduino board
+
+     Created 5/5/20
+     By Alicia Decker & Rebekah Forshey
+
+     https://www.instructables.com/id/Biosensor-Life-Arduino/
+*/
+
 const int ACCpin = A0;
-const int BLUELED = 2;
-const int REDLED = 4;
 const int PiezoPin = 7;
 float ACC;
 float ACCDC;
@@ -13,10 +28,9 @@ int SoundAlert1;
 int SoundAlert2;
 boolean RecordOn = false;
 
+//define soundalert melody
 #define NOTE_C4  262
 #define NOTE_G3  196
-
-//define soundalert melody
 int melody[] = {
   NOTE_C4, NOTE_G3, NOTE_C4, NOTE_G3, NOTE_C4, NOTE_G3, 0
 };
@@ -91,10 +105,11 @@ void greenBtn()
 
 void setup() {
   Serial.begin(9600);
-  pinMode(ACCpin, INPUT);
-  digitalWrite(BLUELED, LOW);
-  digitalWrite(REDLED, LOW);
 
+  //initialize accelerometer as input, sound as output
+  pinMode(ACCpin, INPUT);
+  pinMode(PiezoPin, OUTPUT);
+  
   // initialize touchscreen
   tft.begin();
   if (!ts.begin()) {
@@ -111,9 +126,7 @@ void setup() {
 }
 
 void loop() {
-  //reset LEDs to off and variables to reset position
-  digitalWrite(BLUELED, LOW);
-  digitalWrite(REDLED, LOW);
+  //reset SoundAlert condition variables to 0
   SoundAlert1 = 0;
   SoundAlert2 = 0;
 
@@ -135,32 +148,31 @@ void loop() {
     if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W))) {
       if ((y > REDBUTTON_Y) && (y <= (REDBUTTON_Y + REDBUTTON_H))) {
         Serial.println("Red btn hit");
-        redBtn();
+        redBtn(); //perform the redBtn function
       }
     }
   }
+  
   else //Screen goes green when button is pressed
   {
     if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
       if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
         Serial.println("Green btn hit");
-        greenBtn();
+        greenBtn(); //perform the greenBtn function
       }
     }
   }
 
-  //read and print acceleration data
+  //read and print acceleration data with "rest" baseline
   rest = analogRead(ACCpin);
   ACC = analogRead(ACCpin);
   ACCDC = ACC - rest;
   Serial.print("ACCDC: ");
   Serial.println(ACCDC);
 
-  // if acceleration trips a maximum magnitude, start fall timer
+  // if acceleration trips MAX magnitude, start for loop
   if (abs(ACCDC) > MAX) {
-    digitalWrite(BLUELED, HIGH);
-    digitalWrite(REDLED, LOW);
-
+    
     /* for 10 seconds after a potential fall has been detected,
            sense for stillness of movement that eliminates walking
            as a potential cause of  acceleration */
@@ -172,57 +184,56 @@ void loop() {
       Serial.print("ACCDC: ");
       Serial.println(ACCDC);
 
-      //After a fall occurs, reset fall variables
+      //After a fall occurs, reset old movement variables
       if (i == 10) {
         dACC = 0;
         ACCMAX = 0;
         ACCMIN = 0;
       }
 
-      //Calculate maximum and minimum acceleration
+      //Calculate maximum and minimum acceleration in loop
       if (ACCDC > ACCMAX) {
         ACCMAX = ACCDC;
       }
       if (ACCDC < ACCMIN) {
         ACCMIN = ACCDC;
       }
+
+      /*calculate difference between maximum and minimum
+        acceleration as a sensing variable for movement*/
       dACC = ACCMAX - ACCMIN;
-      Serial.print("Diff ACC : ");
-      Serial.println(dACC);
     }
   }
-  /*if the movement after fall is too little and touchscreen
-     is not touched, allow sound alert */
+  /*if movement after fall is too little, the first
+   of two conditions for a sound alert is met */
   if (dACC < 10) {
     SoundAlert1 = 1;
   }
 
-  //if movement has been detected the code resets, sound disables
+  //if movement is detected; do not allow sound alert
   else {
-    digitalWrite(REDLED, LOW);
-    digitalWrite(BLUELED, LOW);
     SoundAlert1 = 0;
   }
 
-  //If the screen has been touched the code resets, sound disables
+  //If screen has been touched, do not allow sound alert
   if (RecordOn == false) {
-    digitalWrite(REDLED, LOW);
-    digitalWrite(BLUELED, LOW);
     SoundAlert1 = 0;
   }
-  
-  // If the screen hasn't been touched, enable the sound alert
+
+  /* If screen hasn't been touched,
+   second condition for starting sound alert is met */
   else {
     SoundAlert2 = 1;
   }
-  
-//if both no movement is detected and the screen isn't touched,
+
+  /*if no movement is detected & the screen isn't touched,
+     both conditions for sound alert are met; turn on sound*/
   if (SoundAlert1 + SoundAlert2 == 2) {
     //enact Piezo Sound Alert
     tone(PiezoPin, melody[])
   }
   
-  //Turn off speaker before repeating
+  //Turn off Piezospeaker before repeating
   noTone(PiezoPin);
   delay(10);
 }
