@@ -26,6 +26,8 @@ int ACCMIN = 0;
 int dACC;
 int SoundAlert1;
 int SoundAlert2;
+int x;
+int y;
 boolean RecordOn = false;
 
 //define soundalert melody
@@ -217,7 +219,7 @@ void loop() {
 
   //If screen has been touched, do not allow sound alert
   if (RecordOn == false) {
-    SoundAlert1 = 0;
+    SoundAlert2 = 0;
   }
 
   /* If screen hasn't been touched,
